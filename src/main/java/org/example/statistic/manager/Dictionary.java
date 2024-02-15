@@ -5,12 +5,7 @@ import org.example.exception.DictionaryValueNotExistException;
 
 import java.util.List;
 
-public class Dictionary<T> {
-    private List<T> list;
-
-    public Dictionary(List<T> list) {
-        this.list = list;
-    }
+public record Dictionary<T>(List<T> list) {
 
     public void add(T value) throws DictionaryValueAlreadyExistException {
         if (!list.contains(value)) {
@@ -31,7 +26,7 @@ public class Dictionary<T> {
         list.set(index, newValue);
     }
 
-    public void delete(T value) {
+    public void delete(T value) throws DictionaryValueNotExistException {
         if (!list.contains(value)) {
             throw new DictionaryValueNotExistException(value);
         }
