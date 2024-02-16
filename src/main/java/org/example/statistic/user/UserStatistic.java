@@ -25,17 +25,16 @@ public final class UserStatistic {
     public double getPaymentAmount() {
         return paymentList.stream().mapToDouble(payment -> payment.getAmount() * 100).mapToLong(Math::round).sum() / 100.0;
     }
-
     public Map<PaymentMethod, Share> getPaymentMethodSharesMap() {
         Map<PaymentMethod, Share> paymentMethodShareMap = new HashMap<>();
         List<PaymentMethod> paymentMethodList = paymentList.stream().map(Payment::getPaymentMethod)
                 .distinct().toList();
         double allAmount = getPaymentAmount();
         for (PaymentMethod method : paymentMethodList) {
-            double amount = paymentList.stream().filter(payment -> payment.getPaymentMethod() == method)
-                    .mapToDouble(payment -> payment.getAmount() * 100).mapToLong(Math::round).sum() / 100.0;
-            double percent = amount / allAmount * 10000;
-            Share share = new Share(amount, Math.round(percent) / 100.0);
+            int amount = paymentList.stream().filter(payment -> payment.getPaymentMethod().equals(method))
+                    .mapToDouble(payment-> payment.getAmount()*100).mapToLong(Math::round).mapToInt(Math::toIntExact).sum();
+
+            Share share = new Share(amount, (int)allAmount*100);
             paymentMethodShareMap.put(method, share);
         }
         return paymentMethodShareMap;
@@ -48,11 +47,10 @@ public final class UserStatistic {
                 .flatMap(Collection::stream).distinct().toList();
         double allAmount = getPaymentAmount();
         for (Category category : categoryList) {
-            double amount = paymentList.stream()
-                    .filter(payment -> payment.getCategories().contains(category))
-                    .mapToDouble(payment -> payment.getAmount() * 100).mapToLong(Math::round).sum() / 100.0;
-            double percent = amount / allAmount * 10000;
-            Share share = new Share(amount, Math.round(percent) / 100.0);
+            int amount = paymentList.stream().filter(payment -> payment.getCategories().contains(category))
+                    .mapToDouble(payment -> payment.getAmount() * 100).mapToLong(Math::round).mapToInt(Math::toIntExact).sum();
+
+            Share share = new Share(amount, (int)allAmount*100);
             categoryShareMap.put(category, share);
         }
         return categoryShareMap;

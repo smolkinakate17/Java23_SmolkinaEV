@@ -10,10 +10,9 @@ import java.util.Map;
 
 public class CategoryShareMapData {
     private static Share getShareByCategory(Category category, List<Payment> paymentList, double allAmount) {
-        double amount = paymentList.stream().filter(payment -> payment.getCategories().contains(category))
-                .mapToDouble(payment -> payment.getAmount() * 100).mapToLong(Math::round).sum() / 100.0;
-        double percent = amount / allAmount * 10000;
-        return new Share(amount, Math.round(percent) / 100.0);
+       int amount = paymentList.stream().filter(payment -> payment.getCategories().contains(category))
+                .mapToDouble(payment -> payment.getAmount() * 100).mapToLong(Math::round).mapToInt(Math::toIntExact).sum();
+        return new Share(amount, (int)allAmount*100);
     }
 
     public static Map<Category, Share> allPayments() {
