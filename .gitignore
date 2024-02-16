@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 
+=======
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+>>>>>>> origin/model
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -34,5 +41,9 @@ build/
 ### Mac OS ###
 .DS_Store
 
+<<<<<<< HEAD
 
 /target/
+=======
+/target
+>>>>>>> origin/model
