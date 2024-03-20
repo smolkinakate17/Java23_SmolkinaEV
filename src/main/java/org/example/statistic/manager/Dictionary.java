@@ -1,36 +1,94 @@
 package org.example.statistic.manager;
 
-import org.example.exception.DictionaryValueAlreadyExistException;
-import org.example.exception.DictionaryValueNotExistException;
+import jakarta.persistence.EntityManager;
+import org.example.entities.Category;
+import org.example.entities.PaymentMethod;
+import org.example.exception.HasPaymentException;
+import org.example.exception.ValueAlreadyExistException;
+import org.example.exception.ValueNotExistException;
 
-import java.util.List;
+import java.util.Optional;
 
-public record Dictionary<T>(List<T> list) {
 
-    public void add(T value) throws DictionaryValueAlreadyExistException {
-        if (!list.contains(value)) {
-            list.add(value);
-        } else {
-            throw new DictionaryValueAlreadyExistException(value);
+public class Dictionary<T> {
+
+    private final EntityManager entityManager;
+    private final PaymentManager paymentManager;
+
+    public Dictionary(EntityManager entityManager) {
+        this.entityManager = entityManager;
+        this.paymentManager = new PaymentManager(entityManager);
+    }
+
+    private Optional<T> find(T value) {
+
+        if (value instanceof Category) {
+            Category c = entityManager.find(Category.class, ((Category) value).getId());
+            if (c == null) {
+                return Optional.empty();
+            }
+            return (Optional<T>) Optional.of(c);
+        } else if (value instanceof PaymentMethod) {
+            PaymentMethod m = entityManager.find(PaymentMethod.class, ((PaymentMethod) value).getId());
+            if (m == null) {
+                return Optional.empty();
+            }
+            return (Optional<T>) Optional.of(m);
+        } else throw new ClassCastException("Only for PaymentMethod, Category");
+    }
+
+
+    public void add(T value) throws ValueAlreadyExistException {
+        var transaction = entityManager.getTransaction();
+        transaction.begin();
+        try {
+            Optional<T> find = find(value);
+            if (find.isPresent()) {
+                transaction.rollback();
+                throw new ValueAlreadyExistException(value);
+            }
+            entityManager.persist(value);
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+            throw e;
         }
     }
 
-    public void update(T oldValue, T newValue) throws DictionaryValueAlreadyExistException, DictionaryValueNotExistException {
-        if (list.contains(newValue)) {
-            throw new DictionaryValueAlreadyExistException(newValue);
+    public void update(T value) throws ValueNotExistException {
+        var transaction = entityManager.getTransaction();
+        transaction.begin();
+        Optional<T> find = find(value);
+        if (find.isEmpty()) {
+            transaction.rollback();
+            throw new ValueNotExistException(value);
         }
-        if (!list.contains(oldValue)) {
-            throw new DictionaryValueNotExistException(oldValue);
-        }
-        int index = list.indexOf(oldValue);
-        list.set(index, newValue);
+        entityManager.merge(value);
+        transaction.commit();
     }
 
-    public void delete(T value) throws DictionaryValueNotExistException {
-        if (!list.contains(value)) {
-            throw new DictionaryValueNotExistException(value);
+    public void delete(T value) throws ValueNotExistException {
+        var transaction = entityManager.getTransaction();
+        transaction.begin();
+        Optional<T> find = find(value);
+        if (find.isEmpty()) {
+            transaction.rollback();
+            throw new ValueNotExistException(value);
         }
-        list.remove(value);
+        if (value instanceof Category) {
+            if (paymentManager.getPaymentListByCategory((Category) value).size() != 0) {
+                transaction.rollback();
+                throw new HasPaymentException(value);
+            }
+        }
+        if (value instanceof PaymentMethod) {
+            if (paymentManager.getPaymentListByPaymentMethod((PaymentMethod) value).size() != 0) {
+                transaction.rollback();
+                throw new HasPaymentException(value);
+            }
+        }
+        entityManager.remove(value);
+        transaction.commit();
 
     }
 }

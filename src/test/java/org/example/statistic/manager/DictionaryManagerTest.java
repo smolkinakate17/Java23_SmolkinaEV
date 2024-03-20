@@ -1,97 +1,163 @@
 package org.example.statistic.manager;
 
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import org.example.entities.Category;
+import org.example.entities.Payment;
+import org.example.entities.PaymentCategory;
 import org.example.entities.PaymentMethod;
-import org.example.exception.DictionaryValueAlreadyExistException;
-import org.example.exception.DictionaryValueNotExistException;
-import org.example.statistic.data.CategoryData;
-import org.example.statistic.data.PaymentMethodData;
+import org.example.exception.HasPaymentException;
+import org.example.exception.ValueAlreadyExistException;
+import org.example.exception.ValueNotExistException;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.example.statistic.SqlScript;
+import org.hibernate.cfg.Configuration;
+import org.junit.jupiter.api.*;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class DictionaryManagerTest{
-    private Dictionary<Category> categoryDictionary;
-    private Dictionary<PaymentMethod> paymentMethodDictionary;
+public class DictionaryManagerTest {
+    private static EntityManagerFactory entityManagerFactory;
+    private EntityManager entityManager;
+    private List<Category> allCategoryList;
+    private List<PaymentMethod> allPaymentMethodList;
     private DictionaryManager dictionaryManager;
-    private List<Category> testCategoryList;
-    private static Category category;
-    private List<PaymentMethod> testPaymentMethodList;
-    private static PaymentMethod method;
-    private static Category newCategory;
-    private static PaymentMethod newMethod;
+
+    @BeforeAll
+    public static void setup() {
+        entityManagerFactory = new Configuration()
+                .configure("hibernate-postgres.cfg.xml")
+                .addAnnotatedClass(Category.class)
+                .addAnnotatedClass(Payment.class)
+                .addAnnotatedClass(PaymentMethod.class)
+                .addAnnotatedClass(PaymentCategory.class)
+                .buildSessionFactory();
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        if (entityManagerFactory != null) {
+            entityManagerFactory.close();
+        }
+    }
+
     @BeforeEach
-    public void setup() {
-        categoryDictionary = new Dictionary<>(CategoryData.categoryList());
-        paymentMethodDictionary = new Dictionary<>(PaymentMethodData.paymentMethodList());
+    public void openSession() throws IOException {
+        SqlScript.runFromFile(entityManagerFactory, "InsertAll.sql");
+        entityManager = entityManagerFactory.createEntityManager();
+        allCategoryList = entityManager.createQuery(
+                        "from Category c"
+                        , Category.class
+                )
+                .getResultList();
+        allPaymentMethodList = entityManager.createQuery(
+                        "from PaymentMethod p"
+                        , PaymentMethod.class
+                )
+                .getResultList();
+        Dictionary<Category> categoryDictionary = new Dictionary<>(entityManager);
+        Dictionary<PaymentMethod> paymentMethodDictionary = new Dictionary<>(entityManager);
         dictionaryManager = new DictionaryManager(categoryDictionary, paymentMethodDictionary);
-        testCategoryList = new ArrayList<>(CategoryData.categoryList());
-        category = new Category("Category", "Description", "Color");
-        testPaymentMethodList=new ArrayList<>(PaymentMethodData.paymentMethodList());
-        method=new PaymentMethod("PaymentMethod");
-        newCategory=new Category("NewCategory","NewDescription","newColor");
-        newMethod=new PaymentMethod("NewMethod");
     }
+
+    @AfterEach
+    public void closeSession() throws IOException {
+        if (entityManager != null) {
+            entityManager.close();
+        }
+        SqlScript.runFromFile(entityManagerFactory, "DeleteAll.sql");
+    }
+
     @Test
-    public void testAdd() throws DictionaryValueAlreadyExistException {
-        dictionaryManager.categoryDictionary().add(category);
-        testCategoryList.add(category);
-        assertEquals(testCategoryList,dictionaryManager.categoryDictionary().list());
+    public void testAdd() {
+        Category c = new Category("test", "test", "test");
+        allCategoryList.add(c);
+        dictionaryManager.categoryDictionary().add(c);
+        List<Category> afterAddCategory = entityManager.createQuery("from Category c", Category.class).getResultList();
+        assertEquals(allCategoryList.size(), afterAddCategory.size());
 
-        Assertions.assertThrows(DictionaryValueAlreadyExistException.class,()->
-                dictionaryManager.categoryDictionary().add(category));
+        PaymentMethod m = new PaymentMethod("test");
+        allPaymentMethodList.add(m);
+        dictionaryManager.paymentMethodDictionary().add(m);
+        List<PaymentMethod> afterAddPaymentMethod = entityManager.createQuery("from PaymentMethod p", PaymentMethod.class).getResultList();
+        assertEquals(allPaymentMethodList.size(), afterAddPaymentMethod.size());
 
-        dictionaryManager.paymentMethodDictionary().add(method);
-        testPaymentMethodList.add(method);
-        assertEquals(testPaymentMethodList,dictionaryManager.paymentMethodDictionary().list());
-
-        Assertions.assertThrows(DictionaryValueAlreadyExistException.class,()->
-                dictionaryManager.paymentMethodDictionary().add(method));
+        Category badCategory = afterAddCategory.get(afterAddCategory.size() - 1);
+        assertThrows(ValueAlreadyExistException.class, () ->
+                dictionaryManager.categoryDictionary().add(badCategory));
+        PaymentMethod badPaymentMethod = afterAddPaymentMethod.get(afterAddPaymentMethod.size() - 1);
+        Assertions.assertThrows(ValueAlreadyExistException.class, () ->
+                dictionaryManager.paymentMethodDictionary().add(badPaymentMethod));
 
     }
+
     @Test
-    public void testUpdate() throws DictionaryValueAlreadyExistException, DictionaryValueNotExistException {
-        Assertions.assertThrows(DictionaryValueNotExistException.class,()->
-                dictionaryManager.categoryDictionary().update(newCategory,newCategory));
+    public void testUpdate() {
+        Category c = allCategoryList.get(allCategoryList.size() - 1);
+        c.setTitle("newTestTitle");
+        dictionaryManager.categoryDictionary().update(c);
+        List<Category> afterUpdateCategory = entityManager.createQuery("from Category c", Category.class).getResultList();
+        assertTrue(afterUpdateCategory.contains(c));
 
-        dictionaryManager.categoryDictionary().update(CategoryData.other,newCategory);
-        testCategoryList.set(testCategoryList.indexOf(CategoryData.other),newCategory);
-        assertEquals(testCategoryList,dictionaryManager.categoryDictionary().list());
+        PaymentMethod m = allPaymentMethodList.get(allPaymentMethodList.size() - 1);
+        m.setTitle("newTestTitle");
+        dictionaryManager.paymentMethodDictionary().update(m);
+        List<PaymentMethod> afterUpdatePaymentMethod = entityManager.createQuery("from PaymentMethod p", PaymentMethod.class).getResultList();
+        assertTrue(afterUpdatePaymentMethod.contains(m));
 
-        Assertions.assertThrows(DictionaryValueAlreadyExistException.class,()->
-                dictionaryManager.categoryDictionary().update(newCategory,newCategory));
+        Category badCategory = new Category();
+        Assertions.assertThrows(ValueNotExistException.class, () ->
+                dictionaryManager.categoryDictionary().update(badCategory));
 
-        Assertions.assertThrows(DictionaryValueNotExistException.class,()->
-                dictionaryManager.paymentMethodDictionary().update(newMethod,newMethod));
-
-        dictionaryManager.paymentMethodDictionary().update(PaymentMethodData.other,newMethod);
-        testPaymentMethodList.set(testPaymentMethodList.indexOf(PaymentMethodData.other),newMethod);
-        assertEquals(testPaymentMethodList,dictionaryManager.paymentMethodDictionary().list());
-
-        Assertions.assertThrows(DictionaryValueAlreadyExistException.class,()->
-                dictionaryManager.paymentMethodDictionary().update(newMethod,newMethod));
+        PaymentMethod badPaymentMethod = new PaymentMethod();
+        Assertions.assertThrows(ValueNotExistException.class, () ->
+                dictionaryManager.paymentMethodDictionary().update(badPaymentMethod));
     }
+
     @Test
-    public void testDelete(){
-        dictionaryManager.paymentMethodDictionary().delete(PaymentMethodData.other);
-        testPaymentMethodList.remove(PaymentMethodData.other);
-        assertEquals(testPaymentMethodList,dictionaryManager.paymentMethodDictionary().list());
+    public void testDelete() {
+        Category c = new Category("test", "test", "test");
+        dictionaryManager.categoryDictionary().add(c);
+        allCategoryList = entityManager.createQuery(
+                        "from Category c"
+                        , Category.class
+                )
+                .getResultList();
+        allCategoryList.remove(c);
+        dictionaryManager.categoryDictionary().delete(c);
+        List<Category> afterDeleteCategory = entityManager.createQuery("from Category c", Category.class).getResultList();
+        assertFalse(afterDeleteCategory.contains(c));
 
-        Assertions.assertThrows(DictionaryValueNotExistException.class,()->
-                dictionaryManager.paymentMethodDictionary().delete(newMethod));
+        PaymentMethod m = new PaymentMethod("test");
+        dictionaryManager.paymentMethodDictionary().add(m);
+        allPaymentMethodList = entityManager.createQuery(
+                        "from PaymentMethod p"
+                        , PaymentMethod.class
+                )
+                .getResultList();
+        allPaymentMethodList.remove(m);
+        dictionaryManager.paymentMethodDictionary().delete(m);
+        List<PaymentMethod> afterDeletePaymentMethod = entityManager.createQuery("from PaymentMethod p", PaymentMethod.class).getResultList();
+        assertFalse(afterDeletePaymentMethod.contains(m));
 
-        dictionaryManager.categoryDictionary().delete(CategoryData.other);
-        testCategoryList.remove(CategoryData.other);
+        Category badCategory = new Category();
+        Assertions.assertThrows(ValueNotExistException.class, () ->
+                dictionaryManager.categoryDictionary().delete(badCategory));
+        PaymentMethod badPaymentMethod = new PaymentMethod();
+        Assertions.assertThrows(ValueNotExistException.class, () ->
+                dictionaryManager.paymentMethodDictionary().delete(badPaymentMethod));
 
-        Assertions.assertThrows(DictionaryValueNotExistException.class,()->
-                dictionaryManager.categoryDictionary().delete(newCategory));
+        Category existCategory = allCategoryList.get(1);
+        Assertions.assertThrows(HasPaymentException.class, () ->
+                dictionaryManager.categoryDictionary().delete(existCategory));
+        PaymentMethod exist = allPaymentMethodList.get(1);
+        Assertions.assertThrows(HasPaymentException.class, () ->
+                dictionaryManager.paymentMethodDictionary().delete(exist));
+
     }
 
 }
