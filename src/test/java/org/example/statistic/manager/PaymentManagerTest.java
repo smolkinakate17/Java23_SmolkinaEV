@@ -8,7 +8,7 @@ import org.example.entities.Payment;
 import org.example.entities.PaymentCategory;
 import org.example.entities.PaymentMethod;
 import org.example.enums.PaymentSorting;
-import org.example.exception.ValueNotExistException;
+import org.example.exceptions.ValueNotExistException;
 import org.example.statistic.SqlScript;
 import org.example.statistic.data.PaymentManagerData;
 import org.hibernate.cfg.Configuration;
@@ -115,15 +115,15 @@ public class PaymentManagerTest {
 
     @Test
     public void testDelete() {
-        Payment payment = allPayments.stream().filter(p->p.getPaymentCategories().size()>0).findFirst().get();
-        List<PaymentCategory> beforeDeletePaymentCategories=payment.getPaymentCategories();
+        Payment payment = allPayments.stream().filter(p -> p.getPaymentCategories().size() > 0).findFirst().get();
+        List<PaymentCategory> beforeDeletePaymentCategories = payment.getPaymentCategories();
         paymentManager.delete(payment);
         allPayments.remove(payment);
         List<Payment> afterDelete = entityManager.createQuery("from Payment p", Payment.class).getResultList();
-        List<PaymentCategory>afterDeletePaymentCategories=entityManager.createQuery("from PaymentCategory pc", PaymentCategory.class).getResultList();
+        List<PaymentCategory> afterDeletePaymentCategories = entityManager.createQuery("from PaymentCategory pc", PaymentCategory.class).getResultList();
 
         assertFalse(afterDelete.contains(payment));
-        for(PaymentCategory paymentCategory: beforeDeletePaymentCategories){
+        for (PaymentCategory paymentCategory : beforeDeletePaymentCategories) {
             assertFalse(afterDeletePaymentCategories.contains(paymentCategory));
         }
 
@@ -133,36 +133,38 @@ public class PaymentManagerTest {
 
 
     }
+
     @Test
-    public void testGetPaymentListSortedPaginal(){
-        List<Payment> streamSort=allPayments.stream().sorted(Comparator.comparing(Payment::getAmount).reversed()).toList();
-        List<Payment> mySort=paymentManager.getPaymentListSortedPaginal(PaymentSorting.AMOUNT,true,0,10);
-        testSort(streamSort,mySort,0,10);
-        mySort=paymentManager.getPaymentListSortedPaginal(PaymentSorting.AMOUNT,true,1,10);
-        testSort(streamSort,mySort,1,10);
+    public void testGetPaymentListSortedPaginal() {
+        List<Payment> streamSort = allPayments.stream().sorted(Comparator.comparing(Payment::getAmount).reversed()).toList();
+        List<Payment> mySort = paymentManager.getPaymentListSortedPaginal(PaymentSorting.AMOUNT, true, 0, 10);
+        testSort(streamSort, mySort, 0, 10);
+        mySort = paymentManager.getPaymentListSortedPaginal(PaymentSorting.AMOUNT, true, 1, 10);
+        testSort(streamSort, mySort, 1, 10);
 
-        streamSort=allPayments.stream().sorted(Comparator.comparing(Payment::getAmount)).toList();
-        mySort=paymentManager.getPaymentListSortedPaginal(PaymentSorting.AMOUNT,false,0,20);
-        testSort(streamSort,mySort,0,20);
-        mySort=paymentManager.getPaymentListSortedPaginal(PaymentSorting.AMOUNT,false,1,20);
-        testSort(streamSort,mySort,1,20);
+        streamSort = allPayments.stream().sorted(Comparator.comparing(Payment::getAmount)).toList();
+        mySort = paymentManager.getPaymentListSortedPaginal(PaymentSorting.AMOUNT, false, 0, 20);
+        testSort(streamSort, mySort, 0, 20);
+        mySort = paymentManager.getPaymentListSortedPaginal(PaymentSorting.AMOUNT, false, 1, 20);
+        testSort(streamSort, mySort, 1, 20);
 
-        streamSort=allPayments.stream().sorted(Comparator.comparing(Payment::getPaymentDateTime).reversed()).toList();
-        mySort=paymentManager.getPaymentListSortedPaginal(PaymentSorting.DATETIME,true,0,15);
-        testSort(streamSort,mySort,0,15);
-        mySort=paymentManager.getPaymentListSortedPaginal(PaymentSorting.DATETIME,true,1,15);
-        testSort(streamSort,mySort,1,15);
+        streamSort = allPayments.stream().sorted(Comparator.comparing(Payment::getPaymentDateTime).reversed()).toList();
+        mySort = paymentManager.getPaymentListSortedPaginal(PaymentSorting.DATETIME, true, 0, 15);
+        testSort(streamSort, mySort, 0, 15);
+        mySort = paymentManager.getPaymentListSortedPaginal(PaymentSorting.DATETIME, true, 1, 15);
+        testSort(streamSort, mySort, 1, 15);
 
-        streamSort=allPayments.stream().sorted(Comparator.comparing(Payment::getPaymentDateTime)).toList();
-        mySort=paymentManager.getPaymentListSortedPaginal(PaymentSorting.DATETIME,false,0,10);
-        testSort(streamSort,mySort,0,10);
-        mySort=paymentManager.getPaymentListSortedPaginal(PaymentSorting.DATETIME,false,1,10);
-        testSort(streamSort,mySort,1,10);
+        streamSort = allPayments.stream().sorted(Comparator.comparing(Payment::getPaymentDateTime)).toList();
+        mySort = paymentManager.getPaymentListSortedPaginal(PaymentSorting.DATETIME, false, 0, 10);
+        testSort(streamSort, mySort, 0, 10);
+        mySort = paymentManager.getPaymentListSortedPaginal(PaymentSorting.DATETIME, false, 1, 10);
+        testSort(streamSort, mySort, 1, 10);
     }
-    private void testSort(List<Payment> streamSort,List<Payment> mySort,int page,int pageSize){
-        for(int i=0;i<mySort.size();i++){
-            int index=page*pageSize+i;
-            assertEquals(mySort.get(i),streamSort.get(index));
+
+    private void testSort(List<Payment> streamSort, List<Payment> mySort, int page, int pageSize) {
+        for (int i = 0; i < mySort.size(); i++) {
+            int index = page * pageSize + i;
+            assertEquals(mySort.get(i), streamSort.get(index));
         }
     }
 

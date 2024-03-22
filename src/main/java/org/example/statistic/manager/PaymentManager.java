@@ -4,11 +4,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
-import org.example.entities.Category;
 import org.example.entities.Payment;
-import org.example.entities.PaymentMethod;
 import org.example.enums.PaymentSorting;
-import org.example.exception.ValueNotExistException;
+import org.example.exceptions.ValueNotExistException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,20 +26,6 @@ public class PaymentManager {
                 .getResultList();
     }
 
-    public List<Payment> getPaymentListByCategory(Category category) {
-        return entityManager.createQuery(
-                        "select pc.pk.payment from PaymentCategory  pc where pc.pk.category=:category", Payment.class
-                )
-                .setParameter("category", category).getResultList();
-    }
-
-    public List<Payment> getPaymentListByPaymentMethod(PaymentMethod method) {
-        return entityManager.createQuery(
-                        "select p from Payment p where p.paymentMethod=:mehod", Payment.class
-                )
-                .setParameter("mehod", method).getResultList();
-    }
-
     public Optional<Payment> find(Payment payment) {
         Payment p = entityManager.find(Payment.class, payment.getId());
         if (p == null) {
@@ -49,13 +33,21 @@ public class PaymentManager {
         }
         return Optional.of(p);
     }
+    public Optional<Payment> find(long id){
+        Payment p = entityManager.find(Payment.class, id);
+        if (p == null) {
+            return Optional.empty();
+        }
+        return Optional.of(p);
+    }
 
-    public void add(Payment payment) {
+    public Payment add(Payment payment) {
         var transaction = entityManager.getTransaction();
         transaction.begin();
         try {
             entityManager.persist(payment);
             transaction.commit();
+            return payment;
         } catch (Exception e) {
             transaction.rollback();
             throw e;
@@ -63,14 +55,15 @@ public class PaymentManager {
 
     }
 
-    public void update(Payment payment) {
+    public Payment update(Payment payment) {
         var transaction = entityManager.getTransaction();
         transaction.begin();
         entityManager.merge(payment);
         transaction.commit();
+        return payment;
     }
 
-    public void delete(Payment payment) {
+    public Payment delete(Payment payment) {
         var transaction = entityManager.getTransaction();
         transaction.begin();
         Optional<Payment> find = find(payment);
@@ -80,7 +73,21 @@ public class PaymentManager {
         }
         entityManager.remove(payment);
         transaction.commit();
+        return payment;
     }
+    public Payment delete(long id){
+        var transaction = entityManager.getTransaction();
+        transaction.begin();
+        Optional<Payment> find = find(id);
+        if (find.isEmpty()) {
+            transaction.rollback();
+            throw new ValueNotExistException(id);
+        }
+        entityManager.remove(find.get());
+        transaction.commit();
+        return find.get();
+    }
+
 
     public List<Payment> getPaymentListSortedPaginal(PaymentSorting sorting, boolean desc, int page, int pageSize) {
         CriteriaQuery<Payment> criteriaQuery = entityManager.getCriteriaBuilder().createQuery(Payment.class);

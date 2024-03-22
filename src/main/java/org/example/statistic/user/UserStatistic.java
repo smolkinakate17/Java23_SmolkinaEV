@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 
 import jakarta.persistence.Tuple;
 
+import org.example.dtos.CategoryShareDTO;
+import org.example.dtos.PaymentMethodShareDTO;
 import org.example.entities.Category;
 
 import org.example.entities.PaymentMethod;
@@ -49,14 +51,14 @@ public final class UserStatistic {
                                 "where p2.paymentDateTime between :fromDate and :toDate)*100,2) as percent " +
                                 "from Payment p1 where p1.paymentDateTime between :fromDate and :toDate " +
                                 "group by p1.paymentMethod"
-                        , Tuple.class
+                        , PaymentMethodShareDTO.class
                 )
                 .setParameter("fromDate", period.getFromDateTime()).setParameter("toDate", period.getToDateTime())
                 .getResultStream()
                 .collect(
                         Collectors.toMap(
-                                tuple -> (PaymentMethod) tuple.get("method"),
-                                tuple -> new Share(((BigDecimal) tuple.get("amount")).doubleValue(), ((BigDecimal) tuple.get("percent")).doubleValue())
+                                PaymentMethodShareDTO::getMethod,
+                                PaymentMethodShareDTO::getShare
                         )
                 );
         return paymentMethodShareMap;
@@ -74,14 +76,14 @@ public final class UserStatistic {
                                 "join Category c on pc.pk.category.id=c.id " +
                                 "where p.paymentDateTime between :fromDate and :toDate " +
                                 "group by category",
-                        Tuple.class
+                        CategoryShareDTO.class
                 )
                 .setParameter("fromDate", period.getFromDateTime()).setParameter("toDate", period.getToDateTime())
                 .getResultStream()
                 .collect(
                         Collectors.toMap(
-                                tuple -> (Category) tuple.get("category"),
-                                tuple -> new Share(((BigDecimal) tuple.get("amount")).doubleValue(), ((BigDecimal) tuple.get("percent")).doubleValue())
+                                CategoryShareDTO::getCategory,
+                                CategoryShareDTO::getShare
                         )
                 );
         return categoryShareMap;

@@ -35,10 +35,10 @@ ALTER TABLE IF EXISTS public.payment
 
 CREATE TABLE IF NOT EXISTS public.payment_category(
 	payment_id bigint NOT NULL,
-	category_ig bigint NOT NULL,
+	category_id bigint NOT NULL,
 	CONSTRAINT payment_category_pkey PRIMARY KEY (payment_id, category_id),
 	foreign key (payment_id) references public.payment(id) on delete cascade,
-	foreign key (category_ig) references public.category(id) on delete cascade
+	foreign key (category_id) references public.category(id) on delete restrict
 );
 ALTER TABLE IF EXISTS public.payment_category
     OWNER to postgres;
