@@ -7,7 +7,7 @@ import org.example.entities.Category;
 import org.example.entities.Payment;
 import org.example.entities.PaymentCategory;
 import org.example.entities.PaymentMethod;
-import org.example.exception.HasPaymentException;
+import org.example.exception.HavePaymentException;
 import org.example.exception.ValueAlreadyExistException;
 import org.example.exception.ValueNotExistException;
 
@@ -152,10 +152,10 @@ public class DictionaryManagerTest {
                 dictionaryManager.paymentMethodDictionary().delete(badPaymentMethod));
 
         Category existCategory = allCategoryList.get(1);
-        Assertions.assertThrows(HasPaymentException.class, () ->
+        Assertions.assertThrows(HavePaymentException.class, () ->
                 dictionaryManager.categoryDictionary().delete(existCategory));
         PaymentMethod exist = allPaymentMethodList.get(1);
-        Assertions.assertThrows(HasPaymentException.class, () ->
+        Assertions.assertThrows(HavePaymentException.class, () ->
                 dictionaryManager.paymentMethodDictionary().delete(exist));
 
     }

@@ -37,6 +37,14 @@ public class PaymentCategory {
         public int hashCode() {
             return Objects.hash(getPayment(), getCategory());
         }
+
+        @Override
+        public String toString() {
+            return "PaymentCategoryPK{" +
+                    "payment=" + payment.getId() +
+                    ", category=" + category.getId() +
+                    '}';
+        }
     }
 
     @EmbeddedId
@@ -66,5 +74,12 @@ public class PaymentCategory {
     @Override
     public int hashCode() {
         return Objects.hash(getPk());
+    }
+
+    @Override
+    public String toString() {
+        return "PaymentCategory{" +
+                "pk=" + pk +
+                '}';
     }
 }

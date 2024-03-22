@@ -7,7 +7,6 @@ import java.util.Objects;
 
 @Getter
 @NoArgsConstructor
-@ToString
 @Entity
 @Table(name = "payment_method")
 public class PaymentMethod {
@@ -32,5 +31,13 @@ public class PaymentMethod {
     @Override
     public int hashCode() {
         return Objects.hash(getId(), getTitle());
+    }
+
+    @Override
+    public String toString() {
+        return "PaymentMethod{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                '}';
     }
 }

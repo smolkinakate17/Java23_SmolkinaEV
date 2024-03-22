@@ -1,10 +1,13 @@
 package org.example.statistic.manager;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.example.entities.Category;
 import org.example.entities.Payment;
 import org.example.entities.PaymentMethod;
+import org.example.enums.PaymentSorting;
 import org.example.exception.ValueNotExistException;
 
 import java.time.LocalDate;
@@ -39,7 +42,7 @@ public class PaymentManager {
                 .setParameter("mehod", method).getResultList();
     }
 
-    private Optional<Payment> find(Payment payment) {
+    public Optional<Payment> find(Payment payment) {
         Payment p = entityManager.find(Payment.class, payment.getId());
         if (p == null) {
             return Optional.empty();
@@ -77,5 +80,20 @@ public class PaymentManager {
         }
         entityManager.remove(payment);
         transaction.commit();
+    }
+
+    public List<Payment> getPaymentListSortedPaginal(PaymentSorting sorting, boolean desc, int page, int pageSize) {
+        CriteriaQuery<Payment> criteriaQuery = entityManager.getCriteriaBuilder().createQuery(Payment.class);
+        Root<Payment> root = criteriaQuery.from(Payment.class);
+        var sortBy = root.get(sorting.getTitle());
+        var order = desc
+                ? entityManager.getCriteriaBuilder().desc(sortBy)
+                : entityManager.getCriteriaBuilder().asc(sortBy);
+        criteriaQuery.orderBy(order);
+        return entityManager
+                .createQuery(criteriaQuery)
+                .setFirstResult(page * pageSize)
+                .setMaxResults(pageSize)
+                .getResultList();
     }
 }

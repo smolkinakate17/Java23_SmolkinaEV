@@ -5,12 +5,13 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Getter
 @NoArgsConstructor
-@ToString
 @Entity
 @Table(name = "payment")
 
@@ -31,8 +32,23 @@ public class Payment {
     @ManyToOne
     @JoinColumn(name = "payment_method")
     private PaymentMethod paymentMethod;
-    @OneToMany(mappedBy = "pk.payment")
-    private List<PaymentCategory> paymentCategories;
+    @OneToMany(mappedBy = "pk.payment", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
+    private List<PaymentCategory> paymentCategories = new ArrayList<>();
+
+    public Optional<PaymentCategory> findCategory(Category category) {
+        return paymentCategories.stream().filter(paymentCategory -> paymentCategory.getCategory().equals(category))
+                .findFirst();
+    }
+
+    public PaymentCategory addCategory(Category category) {
+        Optional<PaymentCategory> find = findCategory(category);
+        if (find.isPresent()) {
+            return find.get();
+        }
+        PaymentCategory paymentCategory = new PaymentCategory(this, category);
+        paymentCategories.add(paymentCategory);
+        return paymentCategory;
+    }
 
     public Payment(LocalDateTime paymentDateTime, String supplier, BigDecimal amount) {
         this.paymentDateTime = paymentDateTime;
@@ -50,5 +66,17 @@ public class Payment {
     @Override
     public int hashCode() {
         return Objects.hash(getId(), getPaymentDateTime(), getSupplier(), getAmount(), getPaymentMethod(), getPaymentCategories());
+    }
+
+    @Override
+    public String toString() {
+        return "Payment{" +
+                "id=" + id +
+                ", paymentDateTime=" + paymentDateTime +
+                ", supplier='" + supplier + '\'' +
+                ", amount=" + amount +
+                ", paymentMethod=" + paymentMethod +
+                ", paymentCategories=" + paymentCategories +
+                '}';
     }
 }

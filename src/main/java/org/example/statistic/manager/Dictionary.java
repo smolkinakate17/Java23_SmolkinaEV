@@ -3,7 +3,7 @@ package org.example.statistic.manager;
 import jakarta.persistence.EntityManager;
 import org.example.entities.Category;
 import org.example.entities.PaymentMethod;
-import org.example.exception.HasPaymentException;
+import org.example.exception.HavePaymentException;
 import org.example.exception.ValueAlreadyExistException;
 import org.example.exception.ValueNotExistException;
 
@@ -20,7 +20,7 @@ public class Dictionary<T> {
         this.paymentManager = new PaymentManager(entityManager);
     }
 
-    private Optional<T> find(T value) {
+    public Optional<T> find(T value) {
 
         if (value instanceof Category) {
             Category c = entityManager.find(Category.class, ((Category) value).getId());
@@ -78,13 +78,13 @@ public class Dictionary<T> {
         if (value instanceof Category) {
             if (paymentManager.getPaymentListByCategory((Category) value).size() != 0) {
                 transaction.rollback();
-                throw new HasPaymentException(value);
+                throw new HavePaymentException(value);
             }
         }
         if (value instanceof PaymentMethod) {
             if (paymentManager.getPaymentListByPaymentMethod((PaymentMethod) value).size() != 0) {
                 transaction.rollback();
-                throw new HasPaymentException(value);
+                throw new HavePaymentException(value);
             }
         }
         entityManager.remove(value);
