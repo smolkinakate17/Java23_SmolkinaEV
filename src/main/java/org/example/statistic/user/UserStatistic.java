@@ -1,71 +1,104 @@
 package org.example.statistic.user;
 
-import lombok.Getter;
+import jakarta.persistence.EntityManager;
+
+import jakarta.persistence.Tuple;
+
+import org.example.dtos.CategoryShareDTO;
+import org.example.dtos.PaymentMethodShareDTO;
 import org.example.entities.Category;
-import org.example.entities.Payment;
+
 import org.example.entities.PaymentMethod;
 
+
+import java.math.BigDecimal;
 import java.util.*;
-import java.util.function.Function;
+
 import java.util.stream.Collectors;
 
-@Getter
 public final class UserStatistic {
-    private final List<Payment> paymentList;
+    private final Period period;
+    private final EntityManager entityManager;
 
-    public UserStatistic(Period period, List<Payment> paymentList) {
-        this.paymentList = paymentList.stream()
-                .filter(payment -> period.validateDate(payment.getPaymentDateTime().toLocalDate())).toList();
+    public UserStatistic(Period period, EntityManager entityManager) {
+        this.entityManager = entityManager;
+        this.period = period;
     }
 
     public int getPaymentCount() {
-        return paymentList.size();
+        return entityManager.createQuery("select count(p.id) from Payment p where p.paymentDateTime between :fromDate and :toDate", Long.class).
+                setParameter("fromDate", period.getFromDateTime()).setParameter("toDate", period.getToDateTime()).
+                getSingleResult().intValue();
     }
 
-    public double getPaymentAmount() {
-        return paymentList.stream().mapToDouble(payment -> payment.getAmount() * 100).mapToLong(Math::round).sum() / 100.0;
-    }
-    public Map<PaymentMethod, Share> getPaymentMethodSharesMap() {
-        Map<PaymentMethod, Share> paymentMethodShareMap = new HashMap<>();
-        List<PaymentMethod> paymentMethodList = paymentList.stream().map(Payment::getPaymentMethod)
-                .distinct().toList();
-        double allAmount = getPaymentAmount();
-        for (PaymentMethod method : paymentMethodList) {
-            int amount = paymentList.stream().filter(payment -> payment.getPaymentMethod().equals(method))
-                    .mapToDouble(payment-> payment.getAmount()*100).mapToLong(Math::round).mapToInt(Math::toIntExact).sum();
-
-            Share share = new Share(amount, (int)allAmount*100);
-            paymentMethodShareMap.put(method, share);
+    public BigDecimal getPaymentAmount() {
+        BigDecimal result = entityManager.createQuery("select sum(p.amount) from Payment p where p.paymentDateTime between :fromDate and :toDate", BigDecimal.class).
+                setParameter("fromDate", period.getFromDateTime()).setParameter("toDate", period.getToDateTime()).
+                getSingleResult();
+        if (result == null) {
+            return BigDecimal.valueOf(0.0);
         }
+        return result;
+
+    }
+
+    public Map<PaymentMethod, Share> getPaymentMethodSharesMap() {
+        Map<PaymentMethod, Share> paymentMethodShareMap;
+
+        paymentMethodShareMap = entityManager.createQuery(
+                        "select p1.paymentMethod as method, sum(p1.amount) as amount, " +
+                                "round (sum(p1.amount)/(select sum(p2.amount) from Payment p2 " +
+                                "where p2.paymentDateTime between :fromDate and :toDate)*100,2) as percent " +
+                                "from Payment p1 where p1.paymentDateTime between :fromDate and :toDate " +
+                                "group by p1.paymentMethod"
+                        , PaymentMethodShareDTO.class
+                )
+                .setParameter("fromDate", period.getFromDateTime()).setParameter("toDate", period.getToDateTime())
+                .getResultStream()
+                .collect(
+                        Collectors.toMap(
+                                PaymentMethodShareDTO::getMethod,
+                                PaymentMethodShareDTO::getShare
+                        )
+                );
         return paymentMethodShareMap;
 
     }
 
     public Map<Category, Share> getCategorySharesMap() {
-        Map<Category, Share> categoryShareMap = new HashMap<>();
-        List<Category> categoryList = paymentList.stream().map(Payment::getCategories)
-                .flatMap(Collection::stream).distinct().toList();
-        double allAmount = getPaymentAmount();
-        for (Category category : categoryList) {
-            int amount = paymentList.stream().filter(payment -> payment.getCategories().contains(category))
-                    .mapToDouble(payment -> payment.getAmount() * 100).mapToLong(Math::round).mapToInt(Math::toIntExact).sum();
-
-            Share share = new Share(amount, (int)allAmount*100);
-            categoryShareMap.put(category, share);
-        }
+        Map<Category, Share> categoryShareMap = entityManager.createQuery(
+                        "select pc.pk.category as category, sum(pc.pk.payment.amount) as amount," +
+                                "round (sum(pc.pk.payment.amount)/(" +
+                                "select sum(sub_p.amount) from Payment sub_p where " +
+                                "sub_p.paymentDateTime between :fromDate and :toDate)" +
+                                "*100, 2) as percent " +
+                                "from PaymentCategory pc join Payment p on pc.pk.payment.id=p.id " +
+                                "join Category c on pc.pk.category.id=c.id " +
+                                "where p.paymentDateTime between :fromDate and :toDate " +
+                                "group by category",
+                        CategoryShareDTO.class
+                )
+                .setParameter("fromDate", period.getFromDateTime()).setParameter("toDate", period.getToDateTime())
+                .getResultStream()
+                .collect(
+                        Collectors.toMap(
+                                CategoryShareDTO::getCategory,
+                                CategoryShareDTO::getShare
+                        )
+                );
         return categoryShareMap;
     }
 
     public String[] getTopThreeSuppliers() {
+        List<String> result = entityManager.createQuery(
+                        "select p.supplier from Payment p where p.paymentDateTime between :fromDate and :toDate " +
+                                "group by p.supplier order by count(p.supplier) desc, p.supplier limit 3"
+                        , String.class
+                )
+                .setParameter("fromDate", period.getFromDateTime()).setParameter("toDate", period.getToDateTime())
+                .getResultList();
+        return result.toArray(new String[0]);
 
-        Map<String, Long> supplierMap = paymentList.stream().map(Payment::getSupplier)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        List<String> topList = supplierMap.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-                .limit(3).map(Map.Entry::getKey).toList();
-        // на выходе получаем топ три продавца, если у нескольких продавцов одинаковое количество покупок, то они отсортированы по алфавиту
-        return topList.toArray(new String[3]);
 
     }
 }
