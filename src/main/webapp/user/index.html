@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Статитстика</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="_css/style.css"
+    />
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script> -->
+    <!-- <script type="text/javascript" src="_js/chart.js"></script> -->
+    <script src="_js/components.js"></script>
+    <script src="_js/mock.js"></script>
+    <script src="_js/main.js"></script>
+    <script src="_js/api.js"></script>
+</head>
+  <body class="d-flex flex-column h-100">
+    <header class="bg-dark-subtle p-3">
+      <div class="container-fluid pl-0 pr-0">
+        <h1 class="d-flex align-items-center fs-4 text-black mb-0">
+          Статистика
+        </h1>
+      </div>
+    </header>
+    <main> 
+      <!-- <div class="container-fluid"> -->
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title">
+              <h5>Выберите период статистики</h5>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="days" id="sevenDays" checked>
+              <label class="form-check-label" for="sevenDays">
+                Последние семь дней
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="days" id="thirtyDays" >
+              <label class="form-check-label" for="thirtyDays">
+                Последние тридцать дней
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="days" id="userDays" >
+              <label class="form-check-label" for="userDays">
+                Свои даты
+              </label>
+            </div>
+            <div class="row my-3" id="userDate">
+              <div class="col-sm-3">
+                <label for="input-period_from" class="form-label">С</label>
+                <input type="date" id="input-period_from" class="form-control" value="2024-01-01"/>
+              </div>
+              <div class="col-sm-3">
+                <label for="input-period_to" class="form-label">По</label>
+                <input type="date" id="input-period_to" class="form-control" value="2024-01-31" />
+              </div>
+            </div>
+          </div>
+        </div>
+    
+        <div class="row my-3" id="block-loading" hidden>
+          <div class="col text-center">
+            <div class="spinner-border">
+              <span class="visually-hidden">Загрузка...</span>
+            </div>
+          </div>
+        </div>
+        <div id="block-alert" class="row my-3" hidden>
+          <div class="col">
+            <div class="alert alert-danger"></div>
+          </div>
+        </div>
+        <div id="stats">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Всего покупок:</h5>
+              <h6 class="card-text" id="paymentCount"></h6>
+            </div>
+          </div>
+          <div class="card">
+      
+            <div class="card-body">
+              <h5 class="card-title">Сумма покупок</h5>
+              <h6 class="card-text" id="paymentAmount"></h6>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="card-title">
+                <h5>Топ три продавца</h5>
+              </div>
+              <div style="word-spacing:25px;">
+                <h6 class="card-text" id="topSuppliers"></h6>
+              </div>
+            
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Доли расходов по способам оплаты</h5>
+              <div id="paymentMethodShares">
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Гистограмма расходов по категориям покупок</h5>
+              <div id="categoryShares" class="d-flex align-items-end">
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      <!-- </div>  -->
+    
+    
+    </main>
+    <footer class="footer mt-auto py-1 bg-light">
+      <div class="container-fluid d-flex flex-sm-row justify-content-between">
+        <h5>Екатерина Смолькина</h5>
+        <div>
+          <a
+          href="https://github.com/smolkinakate17/Java23_SmolkinaEV"
+          class="link-info"
+          >Java 2023-2024</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
