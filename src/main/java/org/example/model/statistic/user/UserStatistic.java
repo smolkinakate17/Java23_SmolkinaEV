@@ -26,13 +26,13 @@ public final class UserStatistic {
     }
 
     public int getPaymentCount(LocalDateTime from,LocalDateTime to) {
-        return entityManager.createQuery("select count(p.id) from Payment p where p.paymentDateTime between :fromDate and :toDate", Long.class).
+        return entityManager.createQuery("select count(p.id) from Payment p where p.datetime between :fromDate and :toDate", Long.class).
                 setParameter("fromDate", from).setParameter("toDate", to).
                 getSingleResult().intValue();
     }
 
     public BigDecimal getPaymentAmount(LocalDateTime from,LocalDateTime to) {
-        BigDecimal result = entityManager.createQuery("select sum(p.amount) from Payment p where p.paymentDateTime between :fromDate and :toDate", BigDecimal.class).
+        BigDecimal result = entityManager.createQuery("select sum(p.amount) from Payment p where p.datetime between :fromDate and :toDate", BigDecimal.class).
                 setParameter("fromDate", from).setParameter("toDate", to).
                 getSingleResult();
         if (result == null) {
@@ -48,8 +48,8 @@ public final class UserStatistic {
         paymentMethodShareMap = entityManager.createQuery(
                         "select p1.paymentMethod as method, sum(p1.amount) as amount, " +
                                 "round (sum(p1.amount)/(select sum(p2.amount) from Payment p2 " +
-                                "where p2.paymentDateTime between :fromDate and :toDate)*100,2) as percent " +
-                                "from Payment p1 where p1.paymentDateTime between :fromDate and :toDate " +
+                                "where p2.datetime between :fromDate and :toDate)*100,2) as percent " +
+                                "from Payment p1 where p1.datetime between :fromDate and :toDate " +
                                 "group by p1.paymentMethod"
                         , PaymentMethodShareDTO.class
                 )
@@ -70,11 +70,11 @@ public final class UserStatistic {
                         "select pc.pk.category as category, sum(pc.pk.payment.amount) as amount," +
                                 "round (sum(pc.pk.payment.amount)/(" +
                                 "select sum(sub_p.amount) from Payment sub_p where " +
-                                "sub_p.paymentDateTime between :fromDate and :toDate)" +
+                                "sub_p.datetime between :fromDate and :toDate)" +
                                 "*100, 2) as percent " +
                                 "from PaymentCategory pc join Payment p on pc.pk.payment.id=p.id " +
                                 "join Category c on pc.pk.category.id=c.id " +
-                                "where p.paymentDateTime between :fromDate and :toDate " +
+                                "where p.datetime between :fromDate and :toDate " +
                                 "group by category",
                         CategoryShareDTO.class
                 )
@@ -91,7 +91,7 @@ public final class UserStatistic {
 
     public String[] getTopThreeSuppliers(LocalDateTime from,LocalDateTime to) {
         List<String> result = entityManager.createQuery(
-                        "select p.supplier from Payment p where p.paymentDateTime between :fromDate and :toDate " +
+                        "select p.supplier from Payment p where p.datetime between :fromDate and :toDate " +
                                 "group by p.supplier order by count(p.supplier) desc, p.supplier limit 3"
                         , String.class
                 )
